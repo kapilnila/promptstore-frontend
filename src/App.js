@@ -1,33 +1,51 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 function App() {
   const [prompts, setPrompts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const API_BASE_URL = "https://promptstore-backend.onrender.com";
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/prompts/")
-      .then(res => res.json())
-      .then(data => setPrompts(data))
-      .catch(err => console.error(err));
+    const fetchPrompts = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/prompts/`);
+        setPrompts(res.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load prompts. Please check backend connection.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPrompts();
   }, []);
 
+  if (loading) return <h2 className="text-center mt-5">Loading prompts...</h2>;
+  if (error) return <h2 className="text-center mt-5 text-red-500">{error}</h2>;
+
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h1>🧠 Prompt Store</h1>
-      {prompts.map((p) => (
-        <div key={p.id} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
-          <h3>{p.title}</h3>
-          <p>{p.description}</p>
-          <p><b>${p.price}</b></p>
-          <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-            <input type="hidden" name="business" value="nilakapil1@gmail.com" />
-            <input type="hidden" name="cmd" value="_xclick" />
-            <input type="hidden" name="item_name" value={p.title} />
-            <input type="hidden" name="amount" value={p.price} />
-            <input type="hidden" name="currency_code" value="USD" />
-            <button type="submit">Buy with PayPal</button>
-          </form>
-        </div>
-      ))}
+    <div className="container mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-4 text-center text-blue-600">
+        🧠 PromptStore
+      </h1>
+      {prompts.length === 0 ? (
+        <p className="text-center text-gray-500">No prompts found.</p>
+      ) : (
+        <ul className="space-y-4">
+          {prompts.map((prompt) => (
+            <li
+              key={prompt.id}
+              className="border p-4 rounded-lg shadow hover:shadow-lg transition"
+            >
+              <h2 className="text-xl font-semibold">{prompt.title}</h2>
+              <p className="text-gray-700">{prompt.description}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
